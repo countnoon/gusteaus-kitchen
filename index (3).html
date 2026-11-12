@@ -1,0 +1,1086 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gusteau's Kitchen</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* Layout idea: a restaurant pass. Aubergine rail on top, every task is an order ticket on a steel counter.
+   Colours are the four vegetables of ratatouille. Single theme by choice. */
+:root{
+  color-scheme: light;
+  --aubergine:#3a2145;
+  --aubergine-soft:#5a3a68;
+  --tomato:#d8402f;
+  --courgette:#3f7d3a;
+  --squash:#e9b23a;
+  --steel:#e7eaed;
+  --paper:#ffffff;
+  --ink:#221a26;
+  --muted:#635c68;
+  --line:#d3d7dc;
+  --ok:#2c7a43;
+  --ok-bg:#e3f3e7;
+  --bad:#b3261e;
+  --bad-bg:#fbe6e3;
+  --display:"Bricolage Grotesque","Trebuchet MS",Verdana,sans-serif;
+  --body:"Atkinson Hyperlegible",Verdana,"Segoe UI",sans-serif;
+  --mono:"DM Mono","Courier New",monospace;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--steel);color:var(--ink);font-family:var(--body);font-size:17px;line-height:1.55}
+h1,h2,h3{font-family:var(--display);line-height:1.12;text-wrap:balance;margin:0}
+p{margin:0}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible{outline:3px solid var(--squash);outline-offset:2px}
+a{color:var(--aubergine)}
+
+/* ---------- top rail ---------- */
+.rail{position:sticky;top:0;z-index:20;background:var(--aubergine);color:#fff}
+.rail-in{max-width:980px;margin:0 auto;padding:10px 16px;display:flex;gap:14px;align-items:center}
+.brand{font-family:var(--display);font-weight:800;font-size:19px;color:#fff;text-decoration:none;white-space:nowrap}
+.brand span{color:var(--squash)}
+.tabs{display:flex;gap:6px;overflow-x:auto;flex:1;padding:2px 0;scrollbar-width:thin}
+.tab{flex:none;background:transparent;border:1px solid rgba(255,255,255,.28);color:#fff;border-radius:6px;padding:6px 11px;font-family:var(--mono);font-size:13.5px;text-decoration:none;white-space:nowrap}
+.tab:hover{background:rgba(255,255,255,.12)}
+.tab.on{background:#fff;color:var(--aubergine);border-color:#fff;font-weight:500}
+.tab.done::after{content:" \2713";color:var(--squash)}
+.tab.on.done::after{color:var(--courgette)}
+
+main{max-width:980px;margin:0 auto;padding:22px 16px 60px}
+.page{display:none;flex-direction:column;gap:20px}
+.page.on{display:flex}
+
+/* ---------- home ---------- */
+.hero{background:var(--aubergine);color:#fff;border-radius:14px;padding:28px 26px 0;overflow:hidden;display:flex;flex-direction:column;gap:14px}
+.hero h1{font-size:clamp(34px,7vw,58px);font-weight:800;letter-spacing:-.01em}
+.hero h1 em{font-style:normal;color:var(--squash)}
+.hero p{max-width:58ch;color:#eadff0}
+.facts{display:flex;flex-wrap:wrap;gap:8px;margin-top:2px}
+.fact{font-family:var(--mono);font-size:13px;border:1px solid rgba(255,255,255,.35);border-radius:999px;padding:3px 11px}
+/* the dish itself: overlapping vegetable slices */
+.slices{display:flex;margin:14px -26px 0;padding:0 0 0 14px;height:46px;overflow:hidden}
+.slices i{flex:none;width:58px;height:58px;border-radius:50%;margin-left:-22px;border:3px solid rgba(0,0,0,.14);box-shadow:inset 0 0 0 7px rgba(255,255,255,.16)}
+.slices i:nth-child(4n+1){background:var(--tomato)}
+.slices i:nth-child(4n+2){background:var(--courgette)}
+.slices i:nth-child(4n+3){background:var(--squash)}
+.slices i:nth-child(4n){background:var(--aubergine-soft)}
+
+.panel{background:var(--paper);border-radius:12px;padding:20px 22px;display:flex;flex-direction:column;gap:12px}
+.panel h2{font-size:23px}
+.name-row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.name-row label{font-weight:700}
+input[type=text]{font:inherit;padding:9px 11px;border:2px solid var(--line);border-radius:8px;background:#fff;color:var(--ink);min-width:0}
+input[type=text]:focus{border-color:var(--aubergine)}
+select{font:inherit;padding:8px 9px;border:2px solid var(--line);border-radius:8px;background:#fff;color:var(--ink)}
+.steps{margin:0;padding-left:22px;display:flex;flex-direction:column;gap:4px}
+
+.group-title{font-family:var(--mono);font-size:13.5px;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin-top:6px}
+.tickets{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:14px}
+.ticket{position:relative;background:var(--paper);border-radius:4px 4px 0 0;padding:16px 16px 22px;text-decoration:none;color:var(--ink);display:flex;flex-direction:column;gap:6px;border-top:6px solid var(--tomato);
+  --tooth:10px;
+  -webkit-mask:linear-gradient(#000 0 0) top/100% calc(100% - var(--tooth)) no-repeat,conic-gradient(from -45deg at bottom,#0000,#000 1deg 89deg,#0000 90deg) bottom/calc(var(--tooth)*2) var(--tooth) repeat-x;
+          mask:linear-gradient(#000 0 0) top/100% calc(100% - var(--tooth)) no-repeat,conic-gradient(from -45deg at bottom,#0000,#000 1deg 89deg,#0000 90deg) bottom/calc(var(--tooth)*2) var(--tooth) repeat-x}
+.ticket.g{border-top-color:var(--courgette)}
+.ticket:hover{transform:translateY(-2px)}
+.ticket .code{font-family:var(--mono);font-size:13px;color:var(--muted);display:flex;justify-content:space-between;gap:8px}
+.ticket h3{font-size:20px}
+.ticket .what{font-size:15.5px;color:var(--muted)}
+.ticket .state{font-family:var(--mono);font-size:13.5px;margin-top:4px;border-top:1px dashed var(--line);padding-top:8px;display:flex;justify-content:space-between}
+.ticket .state b{color:var(--courgette)}
+@media (prefers-reduced-motion:no-preference){.ticket{transition:transform .15s}}
+
+.cert{border:2px dashed var(--aubergine);background:#fff}
+.cert-top{display:flex;flex-wrap:wrap;justify-content:space-between;gap:12px;align-items:flex-end}
+.rank{font-family:var(--display);font-weight:800;font-size:30px;color:var(--aubergine)}
+.big{font-family:var(--mono);font-size:24px;font-variant-numeric:tabular-nums}
+.bar{height:12px;background:var(--steel);border-radius:999px;overflow:hidden}
+.bar i{display:block;height:100%;background:linear-gradient(90deg,var(--tomato),var(--squash),var(--courgette));width:0}
+table{border-collapse:collapse;width:100%;font-size:15.5px}
+th,td{text-align:left;padding:7px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-family:var(--mono);font-size:12.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:500}
+td.n,th.n{text-align:right;font-variant-numeric:tabular-nums;font-family:var(--mono)}
+.scroll-x{overflow-x:auto}
+
+/* ---------- task pages ---------- */
+.task-head{background:var(--paper);border-radius:12px;padding:20px 22px;border-left:8px solid var(--tomato);display:flex;flex-direction:column;gap:8px}
+.task-head.g{border-left-color:var(--courgette)}
+.task-head .code{font-family:var(--mono);font-size:13.5px;color:var(--muted);display:flex;flex-wrap:wrap;gap:6px 16px}
+.task-head h1{font-size:clamp(26px,5vw,36px)}
+.goal{max-width:65ch}
+.part{background:var(--paper);border-radius:12px;padding:20px 22px;display:flex;flex-direction:column;gap:14px}
+.part h2{font-size:21px;display:flex;flex-wrap:wrap;gap:8px;align-items:baseline}
+.part h2 small{font-family:var(--mono);font-size:13px;font-weight:400;color:var(--muted)}
+.instr{background:#f5f0f7;border-left:4px solid var(--aubergine);padding:9px 13px;border-radius:0 8px 8px 0;max-width:70ch}
+.instr b{color:var(--aubergine)}
+
+.q{display:flex;flex-direction:column;gap:8px;padding-bottom:12px;border-bottom:1px dashed var(--line)}
+.q:last-of-type{border-bottom:0;padding-bottom:0}
+.q-text{font-weight:700}
+.opts{display:flex;flex-wrap:wrap;gap:8px}
+.opt,.btn{background:#fff;border:2px solid var(--line);border-radius:8px;padding:8px 14px;text-align:left}
+.opt:hover:not(:disabled),.btn:hover:not(:disabled){border-color:var(--aubergine)}
+.opt:disabled{cursor:default;opacity:.75}
+.opt.right,.right{background:var(--ok-bg)!important;border-color:var(--ok)!important;color:#14401f;opacity:1!important}
+.opt.wrong,.wrong{background:var(--bad-bg)!important;border-color:var(--bad)!important;color:#6d1611;opacity:1!important}
+.opt.right::after{content:" \2713"} .opt.wrong::after{content:" \2717"}
+.why{font-size:15.5px;color:var(--muted)}
+.btn.primary{background:var(--aubergine);border-color:var(--aubergine);color:#fff;font-weight:700}
+.btn.primary:hover{background:var(--aubergine-soft)}
+.btn.small{padding:5px 11px;font-size:15px}
+.opt.sel,.btn.sel{background:var(--aubergine);border-color:var(--aubergine);color:#fff}
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.result{display:flex;flex-wrap:wrap;gap:12px;align-items:center;background:var(--steel);border-radius:8px;padding:10px 14px;font-weight:700}
+.result .pts{font-family:var(--mono)}
+
+/* match */
+.match{display:grid;grid-template-columns:minmax(120px,1fr) 2fr;gap:10px 14px}
+.match .col{display:flex;flex-direction:column;gap:8px}
+.match .opt{width:100%}
+@media (max-width:520px){.match{grid-template-columns:minmax(0,2fr) minmax(0,3fr);gap:8px}.match .opt{padding:7px 8px;font-size:14.5px;line-height:1.3;min-height:58px;overflow-wrap:anywhere}}
+
+/* order */
+.order{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px;counter-reset:o}
+.order li{display:flex;gap:10px;align-items:center;border:2px solid var(--line);border-radius:8px;padding:7px 10px;background:#fff;counter-increment:o}
+.order li::before{content:counter(o);font-family:var(--mono);color:var(--muted);width:1.3em}
+.order li span{flex:1}
+.order .mv{display:flex;gap:4px}
+.order .mv button{border:2px solid var(--line);background:#fff;border-radius:6px;width:36px;height:34px;line-height:1}
+.order .mv button:hover:not(:disabled){border-color:var(--aubergine)}
+
+/* tap-the-text */
+.tap-text{font-size:18.5px;line-height:2.15;max-width:66ch}
+.chunk{border:0;border-bottom:2px dotted var(--muted);background:transparent;padding:1px 3px;border-radius:4px}
+.chunk:hover:not(:disabled){background:#f1e9f4}
+.chunk.right,.chunk.wrong{border-bottom-style:solid;border:2px solid}
+
+/* gaps */
+.gap-line{display:flex;flex-wrap:wrap;gap:6px 8px;align-items:center;padding:6px 0;border-bottom:1px dashed var(--line)}
+.gap-line input[type=text]{width:11.5em;padding:6px 9px}
+.gap-line.full{flex-direction:column;align-items:stretch}
+.gap-line.full input[type=text]{width:100%}
+.gap-line .fix{font-size:15px;color:var(--ok);font-weight:700}
+.bank{display:flex;flex-wrap:wrap;gap:8px}
+.bank span{font-family:var(--mono);font-size:14.5px;background:#fff7df;border:1px solid var(--squash);border-radius:6px;padding:2px 9px}
+.rule{background:#fff7df;border:2px solid var(--squash);border-radius:10px;padding:14px 16px;display:flex;flex-direction:column;gap:6px}
+.rule .formula{font-family:var(--mono);font-size:17px}
+.rule .formula b{color:var(--tomato)}
+
+/* video + audio */
+.video{position:relative;aspect-ratio:16/9;background:#000 ;border-radius:10px;overflow:hidden}
+.video iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
+.video .ph{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#cbbfd1;font-size:15px;padding:20px;text-align:center}
+.player{display:flex;flex-wrap:wrap;gap:10px;align-items:center;background:var(--aubergine);color:#fff;border-radius:10px;padding:14px 16px}
+.player{flex-direction:column;align-items:stretch}
+.player .btn{border-color:transparent;color:var(--ink);background:#fff;font-weight:700}
+.player .btn:hover:not(:disabled){background:var(--squash);border-color:transparent}
+.player .btn:disabled{opacity:.45;cursor:default}
+.player .btn.sel{background:var(--squash);color:var(--ink)}
+.player .status{font-family:var(--mono);font-size:14px;color:#eadff0}
+.player .speed{margin-left:auto;display:flex;gap:6px;align-items:center;font-size:15px}
+@media (max-width:620px){.player .row{display:grid;grid-template-columns:1fr 1fr;gap:8px}.player .row>.btn{text-align:center;padding:10px 6px}.player .speed{grid-column:1/-1;margin-left:0}}
+.track{display:flex;gap:4px}
+.track i{flex:1;height:8px;border-radius:4px;background:rgba(255,255,255,.22)}
+.track i.past{background:var(--squash)}
+.track i.now{background:#fff}
+.toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:var(--aubergine);color:#fff;border:2px solid var(--squash);border-radius:10px;padding:12px 18px;font-weight:700;z-index:50;max-width:calc(100% - 32px);text-align:center;box-shadow:0 6px 24px rgba(0,0,0,.25)}
+.teams{margin-bottom:12px;display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.team{border-radius:10px;padding:12px 14px;color:#fff;display:flex;justify-content:space-between;align-items:center;font-weight:700;border:4px solid transparent}
+.team.t0{background:var(--tomato)} .team.t1{background:var(--courgette)}
+.team.turn{border-color:var(--squash)}
+.team b{font-family:var(--mono);font-size:26px}
+.card{border:2px solid var(--line);border-radius:10px;padding:16px;display:flex;flex-direction:column;gap:12px}
+.card .sent{font-family:var(--display);font-size:24px;font-weight:600}
+.card .ans{font-size:19px;color:var(--ok);font-weight:700}
+details{border:1px solid var(--line);border-radius:8px;padding:8px 12px;background:#fff}
+summary{cursor:pointer;font-weight:700}
+details[open] summary{margin-bottom:8px}
+.next{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.next a{background:var(--paper);border-radius:8px;padding:10px 16px;text-decoration:none;font-weight:700}
+.next a.go{background:var(--aubergine);color:#fff;margin-left:auto}
+
+/* teachers */
+.teach h2{font-size:22px}
+.crit th{font-size:14px;text-transform:none;letter-spacing:0;color:var(--ink);font-weight:700;font-family:var(--body);border-bottom:2px solid var(--aubergine)}
+.crit td{min-width:120px}
+.crit td:first-child{min-width:150px}
+.teach ul,.teach ol{margin:0;padding-left:22px;display:flex;flex-direction:column;gap:4px}
+.key{font-size:16px}
+.key p{margin-bottom:6px}
+.pill{font-family:var(--mono);font-size:12.5px;border-radius:999px;padding:1px 9px;border:1px solid var(--line);white-space:nowrap}
+@media (max-width:520px){body{font-size:16px}.panel,.part,.task-head{padding:16px}.hero{padding:22px 18px 0}.slices{margin:12px -18px 0}}
+</style>
+</head>
+<body>
+
+<header class="rail">
+  <div class="rail-in">
+    <a class="brand" href="#home">Gusteau's <span>Kitchen</span></a>
+    <nav class="tabs" id="tabs" aria-label="Tasks"></nav>
+  </div>
+</header>
+
+<main>
+
+<!-- ======================= HOME ======================= -->
+<section class="page" id="p-home">
+  <div class="hero">
+    <h1>Gusteau's <em>Kitchen</em></h1>
+    <p>Listening and grammar tasks for young chefs. Watch Remy cook, listen to a real kitchen recipe, and learn how to say what <b>is done</b> in a kitchen.</p>
+    <div class="facts">
+      <span class="fact">Ages 14–16</span>
+      <span class="fact">Level A2+</span>
+      <span class="fact">Listening</span>
+      <span class="fact">Grammar: passive voice</span>
+      <span class="fact">Topic: Ratatouille, food and restaurants</span>
+    </div>
+    <div class="slices" aria-hidden="true" id="slices"></div>
+  </div>
+
+  <div class="panel">
+    <h2>Start here</h2>
+    <div class="name-row">
+      <label for="chef-name">Chef's name:</label>
+      <input type="text" id="chef-name" placeholder="Write your name" autocomplete="off" maxlength="40">
+    </div>
+    <ol class="steps">
+      <li>Do the three <b>Listening</b> tasks first, then the three <b>Grammar</b> tasks.</li>
+      <li>Read the purple box in every part. It tells you what to do.</li>
+      <li>You get points for correct answers. Your points are saved on this device.</li>
+      <li>At the end, show your <b>Chef's card</b> (at the bottom of this page) to your teacher.</li>
+    </ol>
+  </div>
+
+  <p class="group-title">Listening orders</p>
+  <div class="tickets" id="tickets-l"></div>
+  <p class="group-title">Grammar orders</p>
+  <div class="tickets" id="tickets-g"></div>
+
+  <div class="panel cert" id="cert">
+    <div class="cert-top">
+      <div>
+        <p class="group-title" style="margin:0">Chef's card</p>
+        <p class="rank" id="cert-rank">Commis Chef</p>
+        <p id="cert-name">Chef: —</p>
+      </div>
+      <p class="big"><span id="cert-total">0</span> / <span id="cert-max">0</span> points</p>
+    </div>
+    <div class="bar"><i id="cert-bar"></i></div>
+    <div class="scroll-x"><table id="cert-table"></table></div>
+    <p class="why">Ranks: Commis Chef (start) → Chef de Partie (40%) → Sous Chef (60%) → Head Chef (85%).</p>
+    <div class="row"><button class="btn small" id="reset-all" type="button">Clear all my points</button><span class="why" id="reset-msg"></span></div>
+  </div>
+</section>
+
+<!-- ======================= L1 ======================= -->
+<section class="page" id="p-listening-1">
+  <div class="task-head">
+    <p class="code"><span>ORDER L1</span><span>LISTENING · before you watch</span><span>8 min</span><span>8 points</span></p>
+    <h1>Kitchen words</h1>
+    <p class="goal">Before we go into the kitchen, learn eight words that chefs use. You will hear them in the video and in the recipe.</p>
+  </div>
+  <div class="part">
+    <h2>Part A <small>match · 8 points</small></h2>
+    <p class="instr"><b>What to do:</b> tap a word on the left. Then tap its meaning on the right. You get a point when you match a word correctly the first time.</p>
+    <div id="l1a"></div>
+  </div>
+  <div class="part">
+    <h2>Part B <small>think · no points</small></h2>
+    <p class="instr"><b>What to do:</b> the next video is called “Remy fixes the soup”. What do you think happens? Choose one idea. You will check it in the next task.</p>
+    <div class="opts" id="l1b"></div>
+    <p class="why" id="l1b-msg"></p>
+  </div>
+  <div class="next"><a href="#home">← All orders</a><a class="go" href="#listening-2">Next: L2 Remy fixes the soup →</a></div>
+</section>
+
+<!-- ======================= L2 ======================= -->
+<section class="page" id="p-listening-2">
+  <div class="task-head">
+    <p class="code"><span>ORDER L2</span><span>LISTENING · film scene</span><span>15 min</span><span>12 points</span></p>
+    <h1>Remy fixes the soup</h1>
+    <p class="goal">Watch a scene from the film <i>Ratatouille</i>. You will watch it two times: first for the main idea, then for the details.</p>
+  </div>
+  <div class="part">
+    <h2>The scene</h2>
+    <div class="video"><div class="ph">If you still see this text, the video cannot play on this page. Use the YouTube link under this box.</div>
+      <iframe id="yt-soup" title="Ratatouille clip: Is it soup yet?" loading="lazy" referrerpolicy="strict-origin-when-cross-origin" allow="accelerometer; encrypted-media; gyroscope; picture-in-picture; fullscreen" allowfullscreen></iframe>
+    </div>
+    <p class="why">Video not playing here? <a id="yt-soup-link" target="_blank" rel="noopener" href="#">Open the scene on YouTube</a>, watch it, then come back.</p>
+  </div>
+  <div class="part">
+    <h2>Part A <small>first watch · main idea · 3 points</small></h2>
+    <p class="instr"><b>What to do:</b> watch the scene one time. Then answer the three questions.</p>
+    <div id="l2a"></div>
+    <p class="why" id="l2-predict"></p>
+  </div>
+  <div class="part">
+    <h2>Part B <small>second watch · order · 5 points</small></h2>
+    <p class="instr"><b>What to do:</b> watch again. Put the events in the correct order with the arrows ▲ ▼. Then press <b>Check</b>.</p>
+    <div id="l2b"></div>
+  </div>
+  <div class="part">
+    <h2>Part C <small>true or false · 4 points</small></h2>
+    <p class="instr"><b>What to do:</b> is the sentence true or false? Look at the verbs: they all use <b>be + past participle</b>. You will study this in the grammar tasks.</p>
+    <div id="l2c"></div>
+  </div>
+  <div class="next"><a href="#listening-1">← L1</a><a class="go" href="#listening-3">Next: L3 Radio Gusteau →</a></div>
+</section>
+
+<!-- ======================= L3 ======================= -->
+<section class="page" id="p-listening-3">
+  <div class="task-head">
+    <p class="code"><span>ORDER L3</span><span>LISTENING · audio recipe</span><span>15 min</span><span>12 points</span></p>
+    <h1>Radio Gusteau: the ratatouille recipe</h1>
+    <p class="goal">Chef Colette is on the radio. She explains how ratatouille is made at Gusteau's. Listen and complete the recipe.</p>
+  </div>
+  <div class="part">
+    <h2>The recording</h2>
+    <div class="player">
+      <div class="row">
+        <button class="btn" type="button" id="tts-play">&#9654; Play</button>
+        <button class="btn" type="button" id="tts-pause" disabled>&#10073;&#10073; Pause</button>
+        <button class="btn" type="button" id="tts-stop" disabled>&#9632; Stop</button>
+        <button class="btn" type="button" id="tts-back" disabled>&#8630; Repeat last sentence</button>
+        <span class="speed">Speed:
+          <button class="btn small sel" type="button" id="tts-normal">Normal</button>
+          <button class="btn small" type="button" id="tts-slow">Slow</button>
+        </span>
+      </div>
+      <div class="track" id="tts-track" aria-hidden="true"></div>
+      <span class="status" id="tts-status" role="status">Ready. You can listen as many times as you need.</span>
+    </div>
+    <p class="instr"><b>Choose your level:</b> <b>Head Chef</b> listens at normal speed. <b>Sous Chef</b> chooses the “Slow” speed. <b>Commis Chef</b> can open the text below after the first listening.</p>
+    <details id="tts-script-box"><summary>Help: read the text</summary><p id="tts-script"></p></details>
+  </div>
+  <div class="part">
+    <h2>Part A <small>main idea · 1 point</small></h2>
+    <p class="instr"><b>What to do:</b> listen one time and answer the question.</p>
+    <div id="l3a"></div>
+  </div>
+  <div class="part">
+    <h2>Part B <small>order the steps · 6 points</small></h2>
+    <p class="instr"><b>What to do:</b> listen again. Put the six steps of the recipe in the correct order. Then press <b>Check</b>.</p>
+    <div id="l3b"></div>
+  </div>
+  <div class="part">
+    <h2>Part C <small>recipe card · 5 points</small></h2>
+    <p class="instr"><b>What to do:</b> listen for the details. Choose the correct information for the recipe card. Then press <b>Check</b>.</p>
+    <div id="l3c"></div>
+  </div>
+  <div class="next"><a href="#listening-2">← L2</a><a class="go" href="#grammar-1">Next: G1 Spot the passive →</a></div>
+</section>
+
+<!-- ======================= G1 ======================= -->
+<section class="page" id="p-grammar-1">
+  <div class="task-head g">
+    <p class="code"><span>ORDER G1</span><span>GRAMMAR · discover</span><span>12 min</span><span>14 points</span></p>
+    <h1>Spot the passive</h1>
+    <p class="goal">In a kitchen, the food is more important than the person. So chefs often say what <b>is done</b>, not who does it. Find out how this works.</p>
+  </div>
+  <div class="part">
+    <h2>Part A <small>find · 5 points</small></h2>
+    <p class="instr"><b>What to do:</b> read the text. Seven verbs are underlined. Tap the <b>five</b> verbs where we do <b>not</b> know who does the action. Every wrong tap costs one point.</p>
+    <div id="g1a"></div>
+  </div>
+  <div class="part">
+    <h2>Part B <small>the rule · 3 points</small></h2>
+    <div class="rule">
+      <p><b>Active:</b> The chefs <u>cut</u> the vegetables. (Who? The chefs.)</p>
+      <p><b>Passive:</b> The vegetables <u>are cut</u>. (Who? Not important.)</p>
+      <p class="formula">Present passive = <b>am / is / are</b> + <b>past participle</b> (washed, cut, made)</p>
+      <p class="formula">Past passive = <b>was / were</b> + <b>past participle</b></p>
+      <p>To say who does it, add <b>by</b>: The soup is made <b>by Remy</b>.</p>
+    </div>
+    <p class="instr"><b>What to do:</b> read the rule box. Then answer three questions about it.</p>
+    <div id="g1b"></div>
+  </div>
+  <div class="part">
+    <h2>Part C <small>active or passive? · 6 points</small></h2>
+    <p class="instr"><b>What to do:</b> read each sentence. Is it active or passive? Tap your answer.</p>
+    <div id="g1c"></div>
+  </div>
+  <div class="next"><a href="#listening-3">← L3</a><a class="go" href="#grammar-2">Next: G2 Fix the recipe card →</a></div>
+</section>
+
+<!-- ======================= G2 ======================= -->
+<section class="page" id="p-grammar-2">
+  <div class="task-head g">
+    <p class="code"><span>ORDER G2</span><span>GRAMMAR · practice · present passive</span><span>15 min</span><span>8 points</span></p>
+    <h1>Fix the recipe card</h1>
+    <p class="goal">Linguini dropped soup on the recipe card for tomato soup, and the verbs are gone. Write the recipe again with the present passive.</p>
+  </div>
+  <div class="part">
+    <h2>Choose your level</h2>
+    <p class="instr"><b>What to do:</b> choose one level. All levels use the same recipe and give 8 points. You can try a harder level later; your best score is saved.</p>
+    <div class="row" id="g2-levels"></div>
+    <p class="why" id="g2-level-note"></p>
+  </div>
+  <div class="part">
+    <h2 id="g2-title">Tomato soup at Gusteau's</h2>
+    <p class="instr" id="g2-instr"></p>
+    <div id="g2"></div>
+  </div>
+  <div class="next"><a href="#grammar-1">← G1</a><a class="go" href="#grammar-3">Next: G3 The night the critic came →</a></div>
+</section>
+
+<!-- ======================= G3 ======================= -->
+<section class="page" id="p-grammar-3">
+  <div class="task-head g">
+    <p class="code"><span>ORDER G3</span><span>GRAMMAR · past passive</span><span>15 min</span><span>14 points</span></p>
+    <h1>The night the critic came</h1>
+    <p class="goal">Anton Ego, a famous food critic, visited Gusteau's. Tell the story of that night with the past passive: <b>was / were + past participle</b>.</p>
+  </div>
+  <div class="part">
+    <h2>Watch first <small>optional · no points</small></h2>
+    <div class="video"><div class="ph">If you still see this text, the video cannot play on this page. Use the YouTube link under this box.</div>
+      <iframe id="yt-ego" title="Ratatouille clip: Anton Ego tastes ratatouille" loading="lazy" referrerpolicy="strict-origin-when-cross-origin" allow="accelerometer; encrypted-media; gyroscope; picture-in-picture; fullscreen" allowfullscreen></iframe>
+    </div>
+    <p class="why">Video not playing here? <a id="yt-ego-link" target="_blank" rel="noopener" href="#">Open the scene on YouTube</a>.</p>
+  </div>
+  <div class="part">
+    <h2>Part A <small>the story · 8 points</small></h2>
+    <p class="instr"><b>What to do:</b> choose the correct verb form for each sentence of the story. Remember: <b>was</b> for one thing, <b>were</b> for two or more.</p>
+    <div id="g3a"></div>
+  </div>
+  <div class="part">
+    <h2>Part B <small>send it back! · 6 points</small></h2>
+    <p class="instr"><b>What to do:</b> in each pair, one sentence is wrong. A good chef sends it back to the kitchen. Tap the <b>correct</b> sentence. You can also play in two teams: one point for each correct answer.</p>
+    <div id="g3b"></div>
+  </div>
+  <div class="part">
+    <h2>Kitchen battle <small>team game · no points on your card</small></h2>
+    <p class="instr"><b>What to do:</b> play in two teams, Team Tomato and Team Courgette. Read the active sentence and say it in the passive. Then press <b>Show answer</b>. If the team is right, it gets a point. The teams take turns.</p>
+    <div id="g3game"></div>
+  </div>
+  <div class="next"><a href="#grammar-2">← G2</a><a class="go" href="#home">See my Chef's card →</a></div>
+</section>
+
+<!-- ======================= TEACHERS ======================= -->
+<section class="page teach" id="p-teachers">
+  <div class="task-head" style="border-left-color:var(--aubergine)">
+    <p class="code"><span>FOR TEACHERS</span></p>
+    <h1>Teachers</h1>
+    <p class="goal">How the materials meet the project criteria.</p>
+  </div>
+
+  <div class="panel">
+    <div class="scroll-x"><table class="crit">
+      <tr><th>Principle</th><th>How it appears</th></tr>
+      <tr><td><b>Materials development</b></td><td>One theme (Ratatouille and Gusteau's restaurant), one grammar focus (passive voice), one learner profile (A2+, ages 14–16) across tasks L1–L3 and G1–G3.</td></tr>
+      <tr><td><b>Adaptation</b></td><td>A real film scene is adapted with main-idea questions, an ordering task and true or false. A real recipe is rewritten as a short radio text and as a gap-fill recipe card.</td></tr>
+      <tr><td><b>Comprehensible input</b></td><td>Key words are taught before listening (L1). The video is watched twice. The audio has a slow speed and a “repeat sentence” button. A model text comes before the rule.</td></tr>
+      <tr><td><b>Scaffolding</b></td><td>A “What to do” box in every part, a rule box with examples, a word bank, and feedback with a short explanation after every answer. Learners can try again.</td></tr>
+      <tr><td><b>Differentiation</b></td><td>Three levels in G2: Commis Chef, Sous Chef, Head Chef. Three listening routes in L3: normal speed, slow speed, listening with the text. The best score is saved.</td></tr>
+      <tr><td><b>Inclusion</b></td><td>Easy-to-read font, large buttons, arrows instead of drag and drop, text for the audio, no time limits. Right and wrong answers are shown with ✓ and ✗, not only with colour. Works on a phone.</td></tr>
+      <tr><td><b>Technology</b></td><td>Interactive web page with automatic checking, YouTube film clips, an audio player with browser text-to-speech, a team game for the projector.</td></tr>
+      <tr><td><b>Evaluation</b></td><td>Points for every task, a Chef's card with ranks, self-check with instant feedback, peer check in the team game, rubric below.</td></tr>
+    </table></div>
+  </div>
+
+  <div class="panel">
+    <div class="scroll-x"><table class="crit">
+      <tr><th>Rubric (1–4)</th><th>1</th><th>2</th><th>3</th><th>4</th></tr>
+      <tr><td><b>Listening: main idea</b></td><td>Needs the text to follow</td><td>Understands the topic</td><td>Understands the main events</td><td>Retells the events in order</td></tr>
+      <tr><td><b>Listening: details</b></td><td>Few details</td><td>Some details, slow speed</td><td>Most details</td><td>All details at normal speed</td></tr>
+      <tr><td><b>Passive: form</b></td><td>Many errors</td><td>Correct with a word bank</td><td>Few errors</td><td>Almost none, present and past</td></tr>
+      <tr><td><b>Passive: use</b></td><td>Mixes active and passive</td><td>Recognises the passive</td><td>Chooses active or passive correctly</td><td>Changes active to passive, uses “by”</td></tr>
+      <tr><td><b>Task completion</b></td><td>1–2 tasks</td><td>3–4 tasks</td><td>All six tasks</td><td>All six, with a harder level</td></tr>
+    </table></div>
+  </div>
+
+  <div class="panel">
+    <h2>L3 audio text</h2>
+    <p class="why">Read this aloud if a device has no English voice.</p>
+    <p id="teacher-script"></p>
+  </div>
+</section>
+
+</main>
+
+<script>
+/* =====================================================================
+   CONTENT YOU CAN EDIT
+   Change the video IDs here if a clip stops working.
+   A video ID is the part after "watch?v=" in a YouTube address.
+   ===================================================================== */
+const VIDEO = {
+  soup: 'j33Qv2xCg1g',   // RATATOUILLE Clip - Is It Soup Yet? (2007)
+  ego:  'Cxpm-xYSvkU'    // RATATOUILLE Clip - "Anton Ego Tastes Ratatouille" (2007)
+};
+
+const TASKS = [
+  {id:'listening-1', code:'L1', kind:'l', title:'Kitchen words',              what:'Learn 8 words before you watch.',            time:8,  max:8},
+  {id:'listening-2', code:'L2', kind:'l', title:'Remy fixes the soup',        what:'Watch a film scene and answer.',            time:15, max:12},
+  {id:'listening-3', code:'L3', kind:'l', title:'Radio Gusteau',              what:'Listen to a recipe and complete the card.', time:15, max:12},
+  {id:'grammar-1',   code:'G1', kind:'g', title:'Spot the passive',           what:'Find the passive and learn the rule.',      time:12, max:14},
+  {id:'grammar-2',   code:'G2', kind:'g', title:'Fix the recipe card',        what:'Write a recipe in the present passive.',    time:15, max:8},
+  {id:'grammar-3',   code:'G3', kind:'g', title:'The night the critic came',  what:'Tell a story in the past passive.',         time:15, max:14}
+];
+
+const L1_WORDS = [
+  ['🔪 chop',        'cut food into small pieces'],
+  ['🥄 stir',        'mix food with a spoon'],
+  ['♨️ simmer',      'cook slowly in hot liquid'],
+  ['🧂 season',      'add salt, pepper or spices'],
+  ['🫗 pour',        'put a liquid into a pot or a glass'],
+  ['👅 taste',       'try a little food to check it'],
+  ['🤏 a pinch of',  'a very small amount of something'],
+  ['🧺 ingredients', 'all the food you need to make a dish']
+];
+const L1_PREDICT = ['Remy eats all the soup.', 'Remy makes a bad soup better.', 'Remy throws the soup away.'];
+
+const L2_A = [
+  {q:'Where does the scene happen?', opts:['In a supermarket','In a restaurant kitchen','In a school canteen'], a:1},
+  {q:'Who makes the soup bad?', opts:['Linguini, the young man','Remy, the rat','The customers'], a:0},
+  {q:'Who fixes the soup?', opts:['Skinner, the head chef','Linguini','Remy'], a:2}
+];
+const L2_B = [
+  'Water and strange ingredients are added to the soup by Linguini.',
+  'Remy falls into the kitchen.',
+  'Herbs and spices are added to the soup by Remy.',
+  'Remy is seen by Linguini.',
+  'The soup is served to a customer.'
+];
+const L2_C = [
+  {q:'Remy is helped by the other chefs.', opts:['True','False'], a:1, why:'False. Remy cooks alone. Nobody knows he is there.'},
+  {q:'Herbs and spices are added to the soup.', opts:['True','False'], a:0, why:'True. Remy adds them to fix the taste.'},
+  {q:'Remy is caught by Linguini.', opts:['True','False'], a:0, why:'True. Linguini sees him and catches him.'},
+  {q:'At the end, the soup is thrown away.', opts:['True','False'], a:1, why:'False. The soup is served to a customer.'}
+];
+
+const L3_SCRIPT = [
+  'Hello, chefs! Welcome to Radio Gusteau.',
+  'Today, ratatouille is made in our kitchen. Listen carefully.',
+  'First, two aubergines, two courgettes and four tomatoes are washed.',
+  'Then, the vegetables are cut into thin slices.',
+  'Next, an onion is chopped and fried in olive oil.',
+  'After that, tomato sauce is poured into a dish.',
+  'The vegetable slices are placed on top of the sauce in a circle.',
+  'A pinch of salt and some pepper are added.',
+  'Then, the dish is baked in the oven for forty-five minutes, at one hundred and eighty degrees.',
+  'Finally, the ratatouille is served hot with fresh bread.',
+  'It is loved by everyone, even by food critics! Bon appétit!'
+];
+const L3_A = [
+  {q:'What is the radio programme about?', opts:['How a restaurant is opened','How a dish is made','How vegetables are grown'], a:1}
+];
+const L3_B = [
+  'The vegetables are washed.',
+  'The vegetables are cut into thin slices.',
+  'An onion is chopped and fried.',
+  'Tomato sauce is poured into a dish.',
+  'The slices are placed on top of the sauce.',
+  'The dish is baked in the oven.'
+];
+const L3_C = [
+  {label:'Aubergines',        opts:['1','2','3','4'], a:'2'},
+  {label:'Tomatoes',          opts:['2','3','4','6'], a:'4'},
+  {label:'Time in the oven',  opts:['15 minutes','25 minutes','45 minutes','55 minutes'], a:'45 minutes'},
+  {label:'Oven temperature',  opts:['108 degrees','118 degrees','180 degrees','280 degrees'], a:'180 degrees'},
+  {label:'Served with',       opts:['rice','fresh bread','cheese','pasta'], a:'fresh bread'}
+];
+
+/* G1 Part A: strings are plain text; objects are tappable verbs (p:true = passive) */
+const G1_TEXT = [
+  'At Gusteau\'s, ratatouille ', {t:'is made', p:true}, ' every evening. The chefs ', {t:'wash', p:false},
+  ' the vegetables first. Then the vegetables ', {t:'are cut', p:true}, ' into thin slices. Colette ', {t:'makes', p:false},
+  ' the tomato sauce. The slices ', {t:'are placed', p:true}, ' on the sauce, and the dish ', {t:'is baked', p:true},
+  ' in the oven. Finally, it ', {t:'is served', p:true}, ' to the guests.'
+];
+const G1_B = [
+  {q:'We use the passive when…', opts:['the person who does the action is the most important','the action is more important than the person','we talk about the future'], a:1},
+  {q:'The vegetables ___ cut into slices.', opts:['is','are','be'], a:1, why:'“Vegetables” is plural, so we need “are”.'},
+  {q:'Which word tells us who does the action? “The soup is made ___ Remy.”', opts:['with','from','by'], a:2}
+];
+const G1_C = [
+  {q:'Remy adds some salt to the soup.',       opts:['Active','Passive'], a:0},
+  {q:'The soup is stirred with a big spoon.',  opts:['Active','Passive'], a:1},
+  {q:'The plates are washed every evening.',   opts:['Active','Passive'], a:1},
+  {q:'Colette chops the onions very fast.',    opts:['Active','Passive'], a:0},
+  {q:'Fresh bread is baked every morning.',    opts:['Active','Passive'], a:1},
+  {q:'The waiters carry the food to the tables.', opts:['Active','Passive'], a:0}
+];
+
+/* G2: one recipe, three levels */
+const G2 = [
+  {before:'First, the tomatoes',            verb:'wash',  ans:'are washed',  after:'.',                    opts:['is washed','are washed','are wash'],     active:'The chefs wash the tomatoes.',   core:'the tomatoes are washed',    agent:'the chefs'},
+  {before:'The onion',                      verb:'chop',  ans:'is chopped',  after:'into small pieces.',   opts:['is chopped','are chopped','is chop'],    active:'Linguini chops the onion.',      core:'the onion is chopped',       agent:'linguini'},
+  {before:'Olive oil',                      verb:'pour',  ans:'is poured',   after:'into a pot.',          opts:['are poured','is pouring','is poured'],   active:'Colette pours the olive oil.',   core:'the olive oil is poured',    agent:'colette'},
+  {before:'The vegetables',                 verb:'fry',   ans:'are fried',   after:'for five minutes.',    opts:['are fried','is fried','are fry'],        active:'The chefs fry the vegetables.',  core:'the vegetables are fried',   agent:'the chefs'},
+  {before:'Water',                          verb:'add',   ans:'is added',    after:'to the pot.',          opts:['is add','is added','are added'],         active:'Remy adds the water.',           core:'the water is added',         agent:'remy'},
+  {before:'The soup',                       verb:'stir',  ans:'is stirred',  after:'with a big spoon.',    opts:['are stirred','is stirred','is stir'],    active:'Linguini stirs the soup.',       core:'the soup is stirred',        agent:'linguini'},
+  {before:'A pinch of salt and some pepper',verb:'add',   ans:'are added',   after:'.',                    opts:['is added','are add','are added'],        active:'Remy adds the spices.',          core:'the spices are added',       agent:'remy'},
+  {before:'Finally, the soup',              verb:'serve', ans:'is served',   after:'in warm bowls.',       opts:['is served','are served','is serve'],     active:'The waiters serve the soup.',    core:'the soup is served',         agent:'the waiters'}
+];
+const G2_LEVELS = [
+  {id:'commis', name:'Commis Chef', note:'Easier: choose the correct form from three.',  instr:'<b>What to do:</b> read each step of the recipe. Tap the correct verb form.'},
+  {id:'sous',   name:'Sous Chef',   note:'Medium: write the form. A word bank helps you.', instr:'<b>What to do:</b> write the verb in the present passive (<b>is / are</b> + past participle). Example: The bread <u>is cut</u>. Then press <b>Check</b>.'},
+  {id:'head',   name:'Head Chef',   note:'Harder: change active sentences into passive sentences.', instr:'<b>What to do:</b> rewrite each active sentence in the passive. Example: Remy cuts the bread. → <u>The bread is cut.</u> You can add “by Remy” or leave it out. Then press <b>Check</b>.'}
+];
+
+const G3_A = [
+  {q:'One evening, Gusteau\'s ___ by Anton Ego, a famous food critic.', opts:['was visited','were visited','was visit'], a:0},
+  {q:'A simple dish ___ for him: ratatouille.',                         opts:['were chosen','was chosen','was chose'], a:1},
+  {q:'The vegetables ___ into very thin slices.',                       opts:['was cut','were cutted','were cut'], a:2},
+  {q:'The dish ___ by Remy, a little rat.',                             opts:['was cooked','were cooked','was cook'], a:0},
+  {q:'The plates ___ to the table by Linguini.',                        opts:['was carried','were carried','were carry'], a:1},
+  {q:'Ego tasted the food, and his pen ___ on the floor.',              opts:['were dropped','was drop','was dropped'], a:2},
+  {q:'The next day, a wonderful review ___ in the newspaper.',          opts:['was written','was wrote','were written'], a:0},
+  {q:'Later, a new restaurant ___ in Paris. Its name was La Ratatouille.', opts:['were opened','was opened','was open'], a:1}
+];
+const G3_B = [
+  {q:'Pair 1', opts:['The soup was served cold.','The soup were served cold.'], a:0, why:'One soup → was.'},
+  {q:'Pair 2', opts:['The cakes was baked this morning.','The cakes were baked this morning.'], a:1, why:'Two or more cakes → were.'},
+  {q:'Pair 3', opts:['Ratatouille is make from vegetables.','Ratatouille is made from vegetables.'], a:1, why:'We need the past participle: made.'},
+  {q:'Pair 4', opts:['The menu was written by Colette.','The menu was wrote by Colette.'], a:0, why:'write → wrote → written. The passive uses “written”.'},
+  {q:'Pair 5', opts:['The plates is washed every evening.','The plates are washed every evening.'], a:1, why:'Plates is plural → are.'},
+  {q:'Pair 6', opts:['The cheese was eaten by a rat.','The cheese was ate by a rat.'], a:0, why:'eat → ate → eaten. The passive uses “eaten”.'}
+];
+
+const G3_GAME = [
+  ['Remy cooks the soup.',              'The soup is cooked by Remy.'],
+  ['The chefs wash the vegetables.',    'The vegetables are washed by the chefs.'],
+  ['Colette baked the bread.',          'The bread was baked by Colette.'],
+  ['The waiter carried the plates.',    'The plates were carried by the waiter.'],
+  ['Linguini cleans the kitchen.',      'The kitchen is cleaned by Linguini.'],
+  ['Anton Ego wrote the review.',       'The review was written by Anton Ego.'],
+  ['The guests ate the ratatouille.',   'The ratatouille was eaten by the guests.'],
+  ['Gusteau opened the restaurant.',    'The restaurant was opened by Gusteau.']
+];
+
+/* =====================================================================
+   ENGINE
+   ===================================================================== */
+const $ = (s, r=document) => r.querySelector(s);
+const el = (tag, attrs={}, ...kids) => {
+  const n = document.createElement(tag);
+  for (const k in attrs) {
+    if (k === 'class') n.className = attrs[k];
+    else if (k === 'html') n.innerHTML = attrs[k];
+    else n.setAttribute(k, attrs[k]);
+  }
+  kids.forEach(c => n.append(c));
+  return n;
+};
+const shuffle = a => { const b=a.slice(); for(let i=b.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1)); [b[i],b[j]]=[b[j],b[i]];} return b; };
+const shuffleDifferent = a => { let b=shuffle(a), n=0; while (b.every((x,i)=>x===a[i]) && n++<20) b=shuffle(a); return b; };
+const norm = s => s.toLowerCase().replace(/[.,!?;:"“”]/g,'').replace(/[’`]/g,"'").replace(/\s+/g,' ').trim();
+
+/* ----- saved state ----- */
+const KEY = 'gusteaus-kitchen-v1';
+let state = {name:'', scores:{}, predict:null};
+try { Object.assign(state, JSON.parse(localStorage.getItem(KEY)) || {}); } catch(e) {}
+const save = () => { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch(e) {} };
+function setScore(task, part, pts) {
+  const was = taskDone(task);
+  const t = state.scores[task] || (state.scores[task] = {});
+  if (!(part in t) || pts > t[part]) t[part] = pts;
+  save(); renderProgress();
+  if (!was && taskDone(task)) {
+    const m = TASKS.find(x => x.id === task);
+    toast(`Order ${m.code} is ready! ${taskScore(task)} / ${m.max} points`);
+  }
+}
+function toast(text) {
+  document.querySelectorAll('.toast').forEach(x => x.remove());
+  const n = el('div', {class:'toast', role:'status'}, text);
+  document.body.append(n);
+  setTimeout(() => n.remove(), 3500);
+}
+const taskScore = id => Object.values(state.scores[id] || {}).reduce((a,b)=>a+b, 0);
+const TASK_PARTS = {'listening-1':['a'], 'listening-2':['a','b','c'], 'listening-3':['a','b','c'], 'grammar-1':['a','b','c'], 'grammar-2':['a'], 'grammar-3':['a','b']};
+const taskDone = id => TASK_PARTS[id].every(p => state.scores[id] && p in state.scores[id]);
+
+function resultBar(host, pts, max, retry) {
+  const msg = pts === max ? 'Perfect!' : pts >= max*0.6 ? 'Good work!' : 'Keep practising.';
+  const bar = el('div', {class:'result'}, el('span', {class:'pts'}, `${pts} / ${max}`), el('span', {}, msg));
+  const b = el('button', {class:'btn small', type:'button'}, 'Try again');
+  b.onclick = retry;
+  bar.append(b);
+  host.append(bar);
+}
+
+/* ----- multiple choice (also true/false and sorting) ----- */
+function mcq(host, task, part, items, onDone) {
+  host.innerHTML = '';
+  let score = 0, done = 0;
+  items.forEach((it, i) => {
+    const box = el('div', {class:'q'});
+    box.append(el('p', {class:'q-text'}, `${i+1}. ${it.q}`));
+    const opts = el('div', {class:'opts'});
+    it.opts.forEach((o, j) => {
+      const b = el('button', {class:'opt', type:'button'}, o);
+      b.onclick = () => {
+        [...opts.children].forEach(x => x.disabled = true);
+        if (j === it.a) { b.classList.add('right'); score++; }
+        else { b.classList.add('wrong'); opts.children[it.a].classList.add('right'); }
+        if (it.why) box.append(el('p', {class:'why'}, it.why));
+        if (++done === items.length) { setScore(task, part, score); resultBar(host, score, items.length, () => mcq(host, task, part, items, onDone)); if (onDone) onDone(); }
+      };
+      opts.append(b);
+    });
+    box.append(opts);
+    host.append(box);
+  });
+}
+
+/* ----- put in order ----- */
+function order(host, task, part, correct) {
+  host.innerHTML = '';
+  let cur = shuffleDifferent(correct), locked = false;
+  const list = el('ol', {class:'order'});
+  const draw = marks => {
+    list.innerHTML = '';
+    cur.forEach((txt, i) => {
+      const li = el('li', {}, el('span', {}, txt));
+      if (marks) li.classList.add(txt === correct[i] ? 'right' : 'wrong');
+      const mv = el('div', {class:'mv'});
+      const up = el('button', {type:'button', 'aria-label':'Move up'}, '▲');
+      const dn = el('button', {type:'button', 'aria-label':'Move down'}, '▼');
+      up.disabled = locked || i === 0; dn.disabled = locked || i === cur.length-1;
+      up.onclick = () => { [cur[i-1],cur[i]] = [cur[i],cur[i-1]]; draw(); };
+      dn.onclick = () => { [cur[i+1],cur[i]] = [cur[i],cur[i+1]]; draw(); };
+      mv.append(up, dn); li.append(mv); list.append(li);
+    });
+  };
+  draw();
+  const check = el('button', {class:'btn primary', type:'button'}, 'Check');
+  check.onclick = () => {
+    locked = true; draw(true); check.remove();
+    const pts = cur.filter((t,i) => t === correct[i]).length;
+    setScore(task, part, pts);
+    resultBar(host, pts, correct.length, () => order(host, task, part, correct));
+  };
+  host.append(list, el('div', {class:'row', style:'margin-top:12px'}, check));
+}
+
+/* ----- match pairs ----- */
+function match(host, task, part, pairs) {
+  host.innerHTML = '';
+  const grid = el('div', {class:'match'}), left = el('div', {class:'col'}), right = el('div', {class:'col'});
+  let picked = null, score = 0, done = 0;
+  const missed = new Set();
+  pairs.forEach((p, i) => {
+    const b = el('button', {class:'opt', type:'button'}, p[0]);
+    b.onclick = () => { [...left.children].forEach(x => x.classList.remove('sel')); b.classList.add('sel'); picked = {i, b}; };
+    left.append(b);
+  });
+  shuffle(pairs.map((p,i) => ({i, t:p[1]}))).forEach(m => {
+    const b = el('button', {class:'opt', type:'button'}, m.t);
+    b.onclick = () => {
+      if (!picked) return;
+      if (picked.i === m.i) {
+        if (!missed.has(m.i)) score++;
+        picked.b.classList.remove('sel'); picked.b.classList.add('right'); b.classList.add('right');
+        picked.b.disabled = b.disabled = true; picked = null;
+        if (++done === pairs.length) { setScore(task, part, score); resultBar(host, score, pairs.length, () => match(host, task, part, pairs)); }
+      } else {
+        missed.add(picked.i);
+        b.classList.add('wrong'); setTimeout(() => b.classList.remove('wrong'), 700);
+      }
+    };
+    right.append(b);
+  });
+  grid.append(left, right); host.append(grid);
+}
+
+/* ----- tap the passive verbs in a text ----- */
+function tapText(host, task, part, segs) {
+  host.innerHTML = '';
+  const total = segs.filter(s => s.p).length;
+  let found = 0, mistakes = 0;
+  const p = el('p', {class:'tap-text'});
+  const note = el('p', {class:'why'}, `Found: 0 of ${total}`);
+  segs.forEach(s => {
+    if (typeof s === 'string') { p.append(s); return; }
+    const b = el('button', {class:'chunk', type:'button'}, s.t);
+    b.onclick = () => {
+      b.disabled = true;
+      if (s.p) { b.classList.add('right'); found++; } else { b.classList.add('wrong'); mistakes++; }
+      note.textContent = `Found: ${found} of ${total}` + (s.p ? '' : ' — here we know who does it, so this verb is active.');
+      if (found === total) {
+        [...p.querySelectorAll('button')].forEach(x => x.disabled = true);
+        const pts = Math.max(0, total - mistakes);
+        setScore(task, part, pts);
+        resultBar(host, pts, total, () => tapText(host, task, part, segs));
+      }
+    };
+    p.append(b);
+  });
+  host.append(p, note);
+}
+
+/* ----- recipe card with drop-down lists ----- */
+function selects(host, task, part, fields) {
+  host.innerHTML = '';
+  const rows = fields.map((f, i) => {
+    const id = `${task}-${part}-${i}`;
+    const sel = el('select', {id});
+    sel.append(el('option', {value:''}, 'Choose…'));
+    f.opts.forEach(o => sel.append(el('option', {value:o}, o)));
+    const line = el('div', {class:'gap-line'}, el('label', {for:id, style:'min-width:10em;font-weight:700'}, f.label + ':'), sel);
+    host.append(line);
+    return {f, sel, line};
+  });
+  const check = el('button', {class:'btn primary', type:'button'}, 'Check');
+  check.onclick = () => {
+    let pts = 0;
+    rows.forEach(r => {
+      r.sel.disabled = true;
+      if (r.sel.value === r.f.a) { r.sel.classList.add('right'); pts++; }
+      else { r.sel.classList.add('wrong'); r.line.append(el('span', {class:'fix'}, '→ ' + r.f.a)); }
+    });
+    check.remove(); setScore(task, part, pts);
+    resultBar(host, pts, fields.length, () => selects(host, task, part, fields));
+  };
+  host.append(el('div', {class:'row', style:'margin-top:12px'}, check));
+}
+
+/* ----- G2 at three levels ----- */
+let g2Level = 'commis';
+function renderG2() {
+  const host = $('#g2'), lv = G2_LEVELS.find(l => l.id === g2Level);
+  $('#g2-instr').innerHTML = lv.instr;
+  $('#g2-level-note').textContent = lv.note;
+  [...$('#g2-levels').children].forEach(b => b.classList.toggle('sel', b.dataset.lv === g2Level));
+  host.innerHTML = '';
+  if (g2Level === 'commis') {
+    mcq(host, 'grammar-2', 'a', G2.map(x => ({q:`${x.before} ___ ${x.after}`.replace(' .', '.'), opts:x.opts, a:x.opts.indexOf(x.ans)})));
+    return;
+  }
+  if (g2Level === 'sous') {
+    const bank = el('div', {class:'bank'});
+    shuffle([...new Set(G2.map(x => x.ans.split(' ')[1]))]).forEach(w => bank.append(el('span', {}, w)));
+    host.append(el('p', {class:'why'}, 'Word bank (past participles):'), bank);
+  }
+  const rows = G2.map((x, i) => {
+    const id = `g2-${g2Level}-${i}`;
+    const inp = el('input', {type:'text', id, autocomplete:'off', autocapitalize:'off', spellcheck:'false'});
+    let line;
+    if (g2Level === 'sous') {
+      inp.setAttribute('aria-label', `Step ${i+1}: ${x.verb}`);
+      line = el('div', {class:'gap-line'}, el('span', {}, `${i+1}. ${x.before}`), inp, el('span', {}, `(${x.verb}) ${x.after}`.replace(') .', ').')));
+    } else {
+      inp.setAttribute('placeholder', 'Write the passive sentence');
+      line = el('div', {class:'gap-line full'}, el('label', {for:id}, `${i+1}. ${x.active}`), inp);
+    }
+    host.append(line);
+    return {x, inp, line};
+  });
+  const check = el('button', {class:'btn primary', type:'button'}, 'Check');
+  check.onclick = () => {
+    let pts = 0;
+    rows.forEach(r => {
+      const v = norm(r.inp.value);
+      const ok = g2Level === 'sous' ? v === r.x.ans : (v === r.x.core || v === `${r.x.core} by ${r.x.agent}`);
+      r.inp.disabled = true;
+      if (ok) { r.inp.classList.add('right'); pts++; }
+      else {
+        r.inp.classList.add('wrong');
+        const fix = g2Level === 'sous' ? r.x.ans : r.x.core.charAt(0).toUpperCase() + r.x.core.slice(1) + '.';
+        r.line.append(el('span', {class:'fix'}, '→ ' + fix));
+      }
+    });
+    check.remove(); setScore('grammar-2', 'a', pts);
+    resultBar(host, pts, G2.length, renderG2);
+  };
+  host.append(el('div', {class:'row', style:'margin-top:12px'}, check));
+}
+
+/* ----- audio recipe (browser voice), one sentence at a time ----- */
+function setupAudio() {
+  const status = $('#tts-status'), track = $('#tts-track');
+  const bPlay = $('#tts-play'), bPause = $('#tts-pause'), bStop = $('#tts-stop'), bBack = $('#tts-back');
+  $('#tts-script').textContent = L3_SCRIPT.join(' ');
+  $('#teacher-script').textContent = L3_SCRIPT.join(' ');
+  L3_SCRIPT.forEach(() => track.append(el('i')));
+  const can = 'speechSynthesis' in window && 'SpeechSynthesisUtterance' in window;
+  if (!can) {
+    status.textContent = 'This device cannot play the recording. Open “Help: read the text” or ask your teacher to read it.';
+    bPlay.disabled = true; $('#tts-script-box').open = true;
+    return;
+  }
+  try { speechSynthesis.getVoices(); } catch(e) {}
+  let idx = 0, mode = 'idle', rate = 0.9, token = 0;   // mode: idle | playing | paused
+  const draw = () => {
+    [...track.children].forEach((d, i) => d.className = i < idx ? 'past' : (i === idx && mode !== 'idle') ? 'now' : '');
+    bPlay.innerHTML = mode === 'paused' ? '&#9654; Continue' : mode === 'playing' ? '&#8634; Start again' : '&#9654; Play';
+    bPause.disabled = mode !== 'playing';
+    bStop.disabled = mode === 'idle';
+    bBack.disabled = mode === 'idle' || idx === 0;
+    if (mode === 'playing') status.textContent = `Playing: sentence ${idx+1} of ${L3_SCRIPT.length}` + (rate < 0.8 ? ' (slow)' : '');
+  };
+  const silence = () => { token++; try { speechSynthesis.cancel(); } catch(e) {} };
+  const speak = () => {
+    if (idx >= L3_SCRIPT.length) { mode = 'idle'; idx = 0; draw(); [...track.children].forEach(d => d.className = 'past'); status.textContent = 'Finished. Listen again if you need to.'; return; }
+    const my = ++token;
+    try {
+      const voices = speechSynthesis.getVoices();
+      const v = voices.find(x => /^en[-_]GB/i.test(x.lang)) || voices.find(x => /^en/i.test(x.lang));
+      const u = new SpeechSynthesisUtterance(L3_SCRIPT[idx]);
+      u.lang = v ? v.lang : 'en-GB'; if (v) u.voice = v; u.rate = rate;
+      u.onend = () => { if (my !== token) return; idx++; speak(); };
+      u.onerror = () => { if (my !== token) return; mode = 'paused'; draw(); status.textContent = 'The recording stopped. Press Continue, or open “Help: read the text”.'; };
+      mode = 'playing'; draw();
+      speechSynthesis.speak(u);
+    } catch(e) { mode = 'idle'; draw(); status.textContent = 'The recording cannot play here. Open “Help: read the text”.'; }
+  };
+  bPlay.onclick = () => { silence(); if (mode !== 'paused') idx = 0; speak(); };
+  bPause.onclick = () => { silence(); mode = 'paused'; draw(); status.textContent = `Paused at sentence ${idx+1} of ${L3_SCRIPT.length}. Press Continue.`; };
+  bStop.onclick = () => { silence(); mode = 'idle'; idx = 0; draw(); status.textContent = 'Stopped. Press Play to start from the beginning.'; };
+  bBack.onclick = () => { silence(); idx = Math.max(0, idx - 1); speak(); };
+  const setRate = (r, on, off) => { rate = r; on.classList.add('sel'); off.classList.remove('sel'); if (mode === 'playing') { silence(); speak(); } };
+  $('#tts-normal').onclick = () => setRate(0.9, $('#tts-normal'), $('#tts-slow'));
+  $('#tts-slow').onclick = () => setRate(0.65, $('#tts-slow'), $('#tts-normal'));
+  window.addEventListener('hashchange', () => { if (mode === 'playing') bPause.onclick(); });
+  draw();
+}
+
+/* ----- team game ----- */
+function teamGame(host, cards) {
+  host.innerHTML = '';
+  const names = ['Team Tomato', 'Team Courgette'], score = [0, 0];
+  let i = 0;
+  const teams = el('div', {class:'teams'}), card = el('div', {class:'card'});
+  host.append(teams, card);
+  const draw = shown => {
+    teams.innerHTML = '';
+    names.forEach((n, t) => teams.append(el('div', {class:`team t${t}` + (i < cards.length && i % 2 === t ? ' turn' : '')}, el('span', {}, n), el('b', {}, String(score[t])))));
+    card.innerHTML = '';
+    if (i >= cards.length) {
+      const w = score[0] === score[1] ? 'It is a draw!' : `${names[score[0] > score[1] ? 0 : 1]} wins!`;
+      const again = el('button', {class:'btn primary', type:'button'}, 'Play again');
+      again.onclick = () => teamGame(host, cards);
+      card.append(el('p', {class:'sent'}, w), el('div', {class:'row'}, again));
+      return;
+    }
+    const turn = i % 2;
+    card.append(el('p', {class:'why'}, `Card ${i+1} of ${cards.length} · ${names[turn]}, say it in the passive:`), el('p', {class:'sent'}, cards[i][0]));
+    if (!shown) {
+      const b = el('button', {class:'btn primary', type:'button'}, 'Show answer');
+      b.onclick = () => draw(true);
+      card.append(el('div', {class:'row'}, b));
+    } else {
+      const yes = el('button', {class:'btn primary', type:'button'}, 'Correct: +1 point'), no = el('button', {class:'btn', type:'button'}, 'Not correct');
+      yes.onclick = () => { score[turn]++; i++; draw(false); };
+      no.onclick = () => { i++; draw(false); };
+      card.append(el('p', {class:'ans'}, cards[i][1]), el('div', {class:'row'}, yes, no));
+    }
+  };
+  draw(false);
+}
+
+/* ----- home, progress, routing ----- */
+function renderProgress() {
+  const total = TASKS.reduce((a,t) => a + taskScore(t.id), 0), max = TASKS.reduce((a,t) => a + t.max, 0);
+  const pct = total / max;
+  $('#cert-total').textContent = total; $('#cert-max').textContent = max;
+  $('#cert-bar').style.width = Math.round(pct*100) + '%';
+  $('#cert-rank').textContent = pct >= .85 ? 'Head Chef' : pct >= .6 ? 'Sous Chef' : pct >= .4 ? 'Chef de Partie' : 'Commis Chef';
+  $('#cert-name').textContent = 'Chef: ' + (state.name || '—');
+  const tb = $('#cert-table'); tb.innerHTML = '';
+  tb.append(el('tr', {}, el('th', {}, 'Order'), el('th', {}, 'Task'), el('th', {}, 'Status'), el('th', {class:'n'}, 'Points')));
+  ['l','g'].forEach(kind => {
+    const box = $('#tickets-' + kind); box.innerHTML = '';
+    TASKS.filter(t => t.kind === kind).forEach(t => {
+      const sc = taskScore(t.id), done = taskDone(t.id), started = !!state.scores[t.id];
+      const st = done ? 'Done' : started ? 'Started' : 'Not started';
+      const a = el('a', {class:'ticket' + (kind === 'g' ? ' g' : ''), href:'#' + t.id});
+      a.append(el('div', {class:'code'}, el('span', {}, 'ORDER ' + t.code), el('span', {}, t.time + ' min')),
+               el('h3', {}, t.title), el('p', {class:'what'}, t.what),
+               el('div', {class:'state'}, done ? el('b', {}, '✓ Done') : el('span', {}, st), el('span', {}, `${sc} / ${t.max}`)));
+      box.append(a);
+    });
+  });
+  TASKS.forEach(t => {
+    const done = taskDone(t.id), started = !!state.scores[t.id];
+    tb.append(el('tr', {}, el('td', {}, t.code), el('td', {}, t.title), el('td', {}, done ? 'Done' : started ? 'Started' : '—'), el('td', {class:'n'}, `${taskScore(t.id)} / ${t.max}`)));
+    const tab = $(`#tabs [data-id="${t.id}"]`); if (tab) tab.classList.toggle('done', done);
+  });
+}
+
+function buildTabs() {
+  const nav = $('#tabs');
+  const add = (id, label) => nav.append(el('a', {class:'tab', href:'#' + id, 'data-id':id}, label));
+  add('home', 'Home');
+  TASKS.forEach(t => add(t.id, t.code));
+  add('teachers', 'Teachers');
+}
+function route() {
+  const ids = ['home', ...TASKS.map(t => t.id), 'teachers'];
+  const h = location.hash.replace('#', ''), id = ids.includes(h) ? h : 'home';
+  document.querySelectorAll('.page').forEach(p => p.classList.toggle('on', p.id === 'p-' + id));
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('on', t.dataset.id === id));
+  const on = $('.tab.on'); if (on && on.scrollIntoView) on.scrollIntoView({block:'nearest', inline:'center'});
+  window.scrollTo(0, 0);
+}
+
+function init() {
+  buildTabs();
+  const sl = $('#slices'); for (let i = 0; i < 34; i++) sl.append(el('i'));
+
+  const name = $('#chef-name'); name.value = state.name || '';
+  name.addEventListener('input', () => { state.name = name.value.trim(); save(); $('#cert-name').textContent = 'Chef: ' + (state.name || '—'); });
+
+  let armed = false;
+  $('#reset-all').onclick = () => {
+    if (!armed) { armed = true; $('#reset-all').textContent = 'Press again to clear'; $('#reset-msg').textContent = 'This deletes all points on this device.'; return; }
+    state.scores = {}; state.predict = null; save(); location.hash = '#home'; location.reload();
+  };
+
+  // videos
+  [['soup', VIDEO.soup], ['ego', VIDEO.ego]].forEach(([k, id]) => {
+    $('#yt-' + k).src = `https://www.youtube-nocookie.com/embed/${id}?rel=0&modestbranding=1`;
+    $('#yt-' + k + '-link').href = `https://www.youtube.com/watch?v=${id}`;
+  });
+
+  // L1
+  match($('#l1a'), 'listening-1', 'a', L1_WORDS);
+  const pb = $('#l1b');
+  L1_PREDICT.forEach((t, i) => {
+    const b = el('button', {class:'opt' + (state.predict === i ? ' btn sel' : ''), type:'button'}, t);
+    b.onclick = () => { state.predict = i; save(); [...pb.children].forEach(x => x.classList.remove('btn','sel')); b.classList.add('btn','sel'); $('#l1b-msg').textContent = 'Saved. Watch the video in L2 to see if you are right.'; };
+    pb.append(b);
+  });
+
+  // L2
+  mcq($('#l2a'), 'listening-2', 'a', L2_A, () => {
+    const p = $('#l2-predict');
+    if (state.predict === null || state.predict === undefined) p.textContent = '';
+    else p.textContent = state.predict === 1 ? 'Your idea in L1 was correct: Remy makes a bad soup better.' : `Your idea in L1 was “${L1_PREDICT[state.predict]}” In the film, Remy makes a bad soup better.`;
+  });
+  order($('#l2b'), 'listening-2', 'b', L2_B);
+  mcq($('#l2c'), 'listening-2', 'c', L2_C);
+
+  // L3
+  setupAudio();
+  mcq($('#l3a'), 'listening-3', 'a', L3_A);
+  order($('#l3b'), 'listening-3', 'b', L3_B);
+  selects($('#l3c'), 'listening-3', 'c', L3_C);
+
+  // G1
+  tapText($('#g1a'), 'grammar-1', 'a', G1_TEXT);
+  mcq($('#g1b'), 'grammar-1', 'b', G1_B);
+  mcq($('#g1c'), 'grammar-1', 'c', G1_C);
+
+  // G2
+  G2_LEVELS.forEach(l => { const b = el('button', {class:'btn', type:'button', 'data-lv':l.id}, l.name); b.onclick = () => { g2Level = l.id; renderG2(); }; $('#g2-levels').append(b); });
+  renderG2();
+
+  // G3
+  mcq($('#g3a'), 'grammar-3', 'a', G3_A);
+  mcq($('#g3b'), 'grammar-3', 'b', G3_B);
+  teamGame($('#g3game'), G3_GAME);
+
+  renderProgress();
+  route();
+  window.addEventListener('hashchange', route);
+}
+init();
+</script>
+</body>
+</html>
